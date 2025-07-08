@@ -16,6 +16,7 @@ if ($viewCarId) {
     $carImages = $imgStmt->get_result();
 } else {
     $search = $_GET['search'] ?? '';
+    $model = $_GET['model'] ?? '';
     $fuel = $_GET['fuel'] ?? '';
     $trans = $_GET['trans'] ?? '';
     $seater = $_GET['seater'] ?? '';
@@ -24,6 +25,7 @@ if ($viewCarId) {
 
     $query = "SELECT * FROM cars WHERE quantity > 0";
     if ($search) $query .= " AND (brand LIKE '%$search%' OR model LIKE '%$search%')";
+    if ($model) $query .= " AND model = '$model'";
     if ($fuel) $query .= " AND fuel_type = '$fuel'";
     if ($trans) $query .= " AND transmission = '$trans'";
     if ($seater) $query .= " AND seater = '$seater'";
@@ -57,15 +59,6 @@ $userType = $_SESSION['user_type'] ?? '';
       justify-content: space-between;
       align-items: center;
     }
-    button{
-      background: #00cc44;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-    }
     .navbar .logo {color: white; font-weight: bold; font-size: 22px;}
     .nav-links {list-style: none; display: flex; gap: 20px;}
     .nav-links a {
@@ -73,9 +66,44 @@ $userType = $_SESSION['user_type'] ?? '';
     }
     .nav-links a:hover {color: #00cc66;}
 
-    .profile {
+    .profile-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .profile-btn {
+      background: none;
+      border: none;
       color: white;
       font-weight: 600;
+      cursor: pointer;
+    }
+
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      background-color: white;
+      min-width: 140px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      z-index: 99;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .dropdown-menu a {
+      display: block;
+      color: #333;
+      padding: 10px 14px;
+      text-decoration: none;
+    }
+
+    .dropdown-menu a:hover {
+      background-color: #f0f0f0;
+    }
+
+    .profile-dropdown:hover .dropdown-menu {
+      display: block;
     }
 
     .hero {
@@ -98,6 +126,7 @@ $userType = $_SESSION['user_type'] ?? '';
       display: flex;
       gap: 10px;
     }
+
     .search-bar input {
       flex: 1;
       padding: 10px;
@@ -105,7 +134,8 @@ $userType = $_SESSION['user_type'] ?? '';
       border: 1px solid #ccc;
       font-size: 1rem;
     }
-    .search-bar button {
+
+    .search-bar button, .filter-toggle {
       padding: 10px 20px;
       background: #00cc44;
       border: none;
@@ -114,6 +144,49 @@ $userType = $_SESSION['user_type'] ?? '';
       border-radius: 6px;
       cursor: pointer;
     }
+
+    .filter-container {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 10px;
+    }
+
+    .filter-form {
+      margin-top: 10px;
+      display: none;
+      background: #f8f8f8;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    .filter-form select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .mostbooked-badge {
+     margin-left: 40%;
+  display: inline-block;
+  
+  padding: 10px 25px;
+  background: linear-gradient(135deg, #009688, #004d40);
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  border-radius: 30px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: 0.3s ease;
+}
+.mostbooked-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+}
 
     .cars-container {
       max-width: 1100px;
@@ -132,14 +205,14 @@ $userType = $_SESSION['user_type'] ?? '';
       transition: 0.3s;
     }
     .car-card img {
-  width: 100%;
-  height: 180px;
-  object-fit: contain;
-  background-color: #f0f0f0;
-  border-radius: 8px;
-  display: block;
-  margin: 0 auto;
-}
+      width: 100%;
+      height: 180px;
+      object-fit: contain;
+      background-color: #f0f0f0;
+      border-radius: 8px;
+      display: block;
+      margin: 0 auto;
+    }
 
     .car-card .car-content {
       padding: 15px;
@@ -179,9 +252,6 @@ $userType = $_SESSION['user_type'] ?? '';
       border-radius: 10px;
       overflow: hidden;
     }
-    .swiper-wrapper {
-      display: flex;
-    }
 
     .swiper-slide img {
       width: 100%;
@@ -208,7 +278,20 @@ $userType = $_SESSION['user_type'] ?? '';
       text-decoration: none;
       font-weight: bold;
     }
+    .booking-btn{
+    height: 30%;
+    width: 20%;
+      margin-top:0%;
+      margin-left:50%;
+      display: inline-block;
+      background:rgb(27, 55, 52);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
 
+    }
     footer {
       text-align: center;
       padding: 16px;
@@ -229,13 +312,15 @@ $userType = $_SESSION['user_type'] ?? '';
     </ul>
     <div class="profile">
       <?php if ($userLoggedIn): ?>
-        Hi, <?= htmlspecialchars($userName) ?>
-        <?php if ($userType === 'admin'): ?> |
-          <a href="admin_dashboard.php" style="color:#00cc66;">Admin</a>
-        <?php endif; ?>
-        | <button> <a href="logout.php" style="color:#ff4d4d; text-decoration:none;">Logout</a> </button>
+        <div class="profile-dropdown">
+          <button class="profile-btn">👤 <?= htmlspecialchars($userName) ?> ▼</button>
+          <div class="dropdown-menu">
+            <a href="profile.php">View Profile</a>
+            <a href="logout.php" style="color: #ff4d4d;">Logout</a>
+          </div>
+        </div>
       <?php else: ?>
-        <button> <a href="login.php" style="text-decoration:none;">Login</a> | <a href="signup.php" style="text-decoration:none;">Signup</a></button>
+        <button><a href="login.php" style="text-decoration:none; color:white;">Login</a> | <a href="signup.php" style="text-decoration:none; color:white;">Signup</a></button>
       <?php endif; ?>
     </div>
   </nav>
@@ -248,12 +333,57 @@ $userType = $_SESSION['user_type'] ?? '';
   </section>
 
   <?php if (!$viewCarId): ?>
-    <form method="GET" class="search-bar">
-      <input type="text" name="search" placeholder="Search brand/model..." value="<?= htmlspecialchars($search ?? '') ?>">
-      <button type="submit">Search</button>
-    </form>
-  <?php endif; ?>
+    <div class="search-bar">
+      <form method="GET" style="flex:1; display:flex; gap:10px;">
+        <input type="text" name="search" placeholder="Search brand/model..." value="<?= htmlspecialchars($search ?? '') ?>">
+        <button type="submit">Search</button>
+      </form>
+      <button class="filter-toggle" onclick="toggleFilters()">⚙️ Filter</button>
+    </div>
 
+    <div class="filter-container">
+      <form method="GET" id="filterForm" class="filter-form">
+        <select name="model">
+          <option value="">-- Select Model --</option>
+          <option value="SUV" <?= ($model ?? '') === 'SUV' ? 'selected' : '' ?>>SUV</option>
+          <option value="Sedan" <?= ($model ?? '') === 'Sedan' ? 'selected' : '' ?>>Sedan</option>
+        </select>
+
+        <select name="fuel">
+          <option value="">-- Fuel Type --</option>
+          <option value="Petrol" <?= ($fuel === 'Petrol') ? 'selected' : '' ?>>Petrol</option>
+          <option value="Diesel" <?= ($fuel === 'Diesel') ? 'selected' : '' ?>>Diesel</option>
+        </select>
+
+        <select name="trans">
+          <option value="">-- Transmission --</option>
+          <option value="Manual" <?= ($trans === 'Manual') ? 'selected' : '' ?>>Manual</option>
+          <option value="Automatic" <?= ($trans === 'Automatic') ? 'selected' : '' ?>>Automatic</option>
+        </select>
+
+        <select name="seater">
+          <option value="">-- Seater --</option>
+          <option value="4" <?= ($seater === '4') ? 'selected' : '' ?>>4</option>
+          <option value="7" <?= ($seater === '7') ? 'selected' : '' ?>>7</option>
+        </select>
+
+        <select name="terrain">
+          <option value="">-- Terrain --</option>
+          <option value="City" <?= ($terrain === 'City') ? 'selected' : '' ?>>City</option>
+          <option value="Off-road" <?= ($terrain === 'Off-road') ? 'selected' : '' ?>>Off-road</option>
+        </select>
+
+        <select name="luxury">
+          <option value="">-- Luxury --</option>
+          <option value="1" <?= ($luxury === '1') ? 'selected' : '' ?>>Yes</option>
+          <option value="0" <?= ($luxury === '0') ? 'selected' : '' ?>>No</option>
+        </select>
+
+        <button type="submit" style="margin-top: 10px;">Apply Filters</button>
+      </form>
+    </div>
+  <?php endif; ?>
+  <h2><span class="mostbooked-badge">🚗 Featured Cars</span></h2>
   <main>
     <?php if ($viewCarId && $car): ?>
       <div class="car-details">
@@ -272,7 +402,6 @@ $userType = $_SESSION['user_type'] ?? '';
             <div class="swiper-button-prev"></div>
           </div>
         <?php else: ?>
-          <!-- fallback cover image if no additional images -->
           <img src="images/<?= htmlspecialchars($car['image']) ?>" alt="<?= htmlspecialchars($car['model']) ?>" style="width:100%; height:300px; object-fit:cover; border-radius:10px; margin-bottom:20px;">
         <?php endif; ?>
 
@@ -285,8 +414,8 @@ $userType = $_SESSION['user_type'] ?? '';
         <p><strong>Details:</strong><br><?= nl2br(htmlspecialchars($car['details'])) ?></p>
 
         <a href="index.php" class="btn-back">&larr; Back to All Cars</a>
+        <button class="booking-btn"><a href"booking.php">Book Now</a></button>
       </div>
-
     <?php elseif (!$viewCarId && isset($cars)): ?>
       <div class="cars-container">
         <?php while ($car = $cars->fetch_assoc()): ?>
@@ -320,6 +449,11 @@ $userType = $_SESSION['user_type'] ?? '';
         disableOnInteraction: false
       }
     });
+
+    function toggleFilters() {
+      const filterForm = document.getElementById('filterForm');
+      filterForm.style.display = filterForm.style.display === 'block' ? 'none' : 'block';
+    }
   </script>
 </body>
 </html>
